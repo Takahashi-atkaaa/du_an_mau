@@ -1,5 +1,4 @@
 <?php 
-// Có class chứa các function thực thi tương tác với cơ sở dữ liệu 
 class ProductModel 
 {
     public $conn;
@@ -9,104 +8,50 @@ class ProductModel
     }
 
     // Lấy tất cả sản phẩm
-    public function getAllProduct()
-    {
-        $sql = "SELECT p.*, c.name as category_name 
-                FROM products p 
-                JOIN product_categories c ON p.category_id = c.id 
-                WHERE p.status = 'active' 
-                ORDER BY p.created_at DESC";
+    public function all() {
+        $sql = "SELECT * FROM product";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute();
-        return $stmt->fetchAll();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Lấy sản phẩm theo ID
-    public function getProductById($id)
-    {
-        $sql = "SELECT p.*, c.name as category_name 
-                FROM products p 
-                JOIN product_categories c ON p.category_id = c.id 
-                WHERE p.id = ? AND p.status = 'active'";
+    // Lấy 1 sản phẩm theo ID
+    public function find($id) {
+        $sql = "SELECT * FROM product WHERE id = :id";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$id]);
-        return $stmt->fetch();
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    // Tìm sản phẩm theo tên
-    public function searchProductsByName($keyword)
-    {
-        $sql = "SELECT p.*, c.name as category_name 
-                FROM products p 
-                JOIN product_categories c ON p.category_id = c.id 
-                WHERE p.name LIKE ? AND p.status = 'active' 
-                ORDER BY p.name";
+    // Thêm sản phẩm
+    public function insert($data) {
+        $sql = "INSERT INTO product (name, image, price, idcategory, description, hot, view, discount) 
+                VALUES (:name, :image, :price, :idcategory, :description, :hot, :view, :discount)";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute(['%' . $keyword . '%']);
-        return $stmt->fetchAll();
-    }
-
-    // Tìm sản phẩm theo danh mục
-    public function getProductsByCategory($categoryId)
-    {
-        $sql = "SELECT p.*, c.name as category_name 
-                FROM products p 
-                JOIN product_categories c ON p.category_id = c.id 
-                WHERE p.category_id = ? AND p.status = 'active' 
-                ORDER BY p.name";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$categoryId]);
-        return $stmt->fetchAll();
-    }
-
-    // Tạo sản phẩm mới
-    public function createProduct($data)
-    {
-        $sql = "INSERT INTO products (name, description, price, original_price, category_id, image, stock_quantity) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)";
-        $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([
-            $data['name'],
-            $data['description'] ?? null,
-            $data['price'],
-            $data['original_price'] ?? null,
-            $data['category_id'],
-            $data['image'] ?? null,
-            $data['stock_quantity'] ?? 0
-        ]);
+        return $stmt->execute($data);
     }
 
     // Cập nhật sản phẩm
-    public function updateProduct($id, $data)
-    {
-        $sql = "UPDATE products SET name = ?, description = ?, price = ?, original_price = ?, 
-                category_id = ?, image = ?, stock_quantity = ? WHERE id = ?";
+    public function updateProduct($id, $data) {
+        $sql = "UPDATE product 
+                SET name=:name, image=:image, price=:price, idcategory=:idcategory, 
+                    description=:description, hot=:hot, view=:view, discount=:discount
+                WHERE id=:id";
         $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([
-            $data['name'],
-            $data['description'] ?? null,
-            $data['price'],
-            $data['original_price'] ?? null,
-            $data['category_id'],
-            $data['image'] ?? null,
-            $data['stock_quantity'] ?? 0,
-            $id
-        ]);
+        $data['id'] = $id;
+        return $stmt->execute($data);
     }
 
-    // Xóa sản phẩm (soft delete)
-    public function deleteProduct($id)
-    {
-        $sql = "UPDATE products SET status = 'inactive' WHERE id = ?";
+    // Xóa sản phẩm
+    public function delete($id) {
+        // Xóa comment liên quan trước
+        $sql = "DELETE FROM comment WHERE idproduct = :id";
         $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([$id]);
-    }
-
-    // Cập nhật số lượng tồn kho
-    public function updateStock($id, $quantity)
-    {
-        $sql = "UPDATE products SET stock_quantity = ? WHERE id = ?";
+        $stmt->execute(['id' => $id]);
+    
+        // Sau đó mới xóa sản phẩm
+        $sql = "DELETE FROM product WHERE id = :id";
         $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([$quantity, $id]);
+        return $stmt->execute(['id' => $id]);
     }
 }

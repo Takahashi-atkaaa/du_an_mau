@@ -1,11 +1,28 @@
 <?php
-// Controller cho website Feane Restaurant
+require_once 'models/CategoryModel.php';
+require_once 'models/ProductModel.php';
+require_once 'models/CommentModel.php';
+
 class FeaneController
 {
+    public $user_model;
+    public $product_model;
+    public $comment_model;
+    public $category_model;
+    
     public function __construct()
     {
-        // Khởi tạo controller
+        $this->user_model     = new UserModel();
+        $this->product_model  = new ProductModel();
+        $this->comment_model  = new CommentModel();
+        $this->category_model = new CategoryModel();
     }
+
+// Controller cho website Feane Restaurant
+
+
+   
+    
 
     // Trang chủ
     public function Home()
@@ -13,6 +30,8 @@ class FeaneController
         $title = "Feane - Restaurant";
         $page = "home";
         require_once './views/feane/home.php';
+
+
     }
 
     // Trang Menu
@@ -20,6 +39,10 @@ class FeaneController
     {
         $title = "Menu - Feane";
         $page = "menu";
+    
+        $category = $this->category_model->getAllCategories(); // ['id','name','slug']
+        $products = $this->product_model->all(); // ['id','name','category_slug','image','description','price','old_price']
+    
         require_once './views/feane/menu.php';
     }
 
@@ -32,10 +55,12 @@ class FeaneController
     }
 
     // Trang Book Table
-    public function BookTable()
-    {
-        $title = "Book Table - Feane";
-        $page = "book";
-        require_once './views/feane/book.php';
-    }
+
+
+
+    
 }
+
+    // Trang chủ
+ 
+    

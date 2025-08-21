@@ -1,83 +1,58 @@
 <?php
-class UserModel 
-{
-    public $conn;
-    
-    public function __construct()
-    {
+require_once __DIR__ . '/../commons/function.php';
+
+
+
+class UserModel {
+    private $conn;
+
+    public function __construct() {
         $this->conn = connectDB();
     }
 
-    // Đăng nhập
-    public function login($username, $password)
-    {
-        $sql = "SELECT * FROM users WHERE username = ? AND status = 'active'";
+    // Lấy tất cả user
+    public function all() {
+        $sql = "SELECT * FROM user";
         $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$username]);
-        $user = $stmt->fetch();
-        
-        if ($user && password_verify($password, $user['password'])) {
-            return $user;
-        }
-        return false;
+       $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Lấy thông tin user theo ID
-    public function getUserById($id)
-    {
-        $sql = "SELECT * FROM users WHERE id = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$id]);
-        return $stmt->fetch();
-    }
 
-    // Tạo user mới
-    public function createUser($data)
-    {
-        $sql = "INSERT INTO users (username, email, password, full_name, phone, address, role) 
-                VALUES (?, ?, ?, ?, ?, ?, ?)";
+   
+    public function delete($id){
+        // Xóa comment trước
+        $sql = "DELETE FROM comment WHERE iduser = :id";
         $stmt = $this->conn->prepare($sql);
-        $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
-        
-        return $stmt->execute([
-            $data['username'],
-            $data['email'],
-            $hashedPassword,
-            $data['full_name'],
-            $data['phone'] ?? null,
-            $data['address'] ?? null,
-            $data['role'] ?? 'user'
-        ]);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        $stmt->execute();
+    
+        // Sau đó mới xóa user
+        $sql = "DELETE FROM user WHERE id = :id";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+        return $stmt->execute();
     }
+    public function create($data)
+{
+    $sql = "INSERT INTO user (name, email, phone, password, role, active) 
+            VALUES (:name, :email, :phone, :password, :role, :active)";
+    $stmt = $this->conn->prepare($sql);
+    return $stmt->execute([
+        ':name'     => $data['name'],
+        ':email'    => $data['email'],
+        ':phone'    => $data['phone'],
+        ':password' => $data['password'],
+        ':role'     => $data['role'],
+        ':active'   => $data['active']
+    ]);
+}
+public function findByEmail($email)
+{
+    $sql = "SELECT * FROM user WHERE email = :email LIMIT 1";
+    $stmt = $this->conn->prepare($sql);
+    $stmt->execute([':email' => $email]);
+    return $stmt->fetch(PDO::FETCH_ASSOC);
+}
 
-    // Cập nhật thông tin user
-    public function updateUser($id, $data)
-    {
-        $sql = "UPDATE users SET full_name = ?, phone = ?, address = ? WHERE id = ?";
-        $stmt = $this->conn->prepare($sql);
-        return $stmt->execute([
-            $data['full_name'],
-            $data['phone'] ?? null,
-            $data['address'] ?? null,
-            $id
-        ]);
-    }
-
-    // Kiểm tra username đã tồn tại
-    public function checkUsernameExists($username)
-    {
-        $sql = "SELECT COUNT(*) FROM users WHERE username = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$username]);
-        return $stmt->fetchColumn() > 0;
-    }
-
-    // Kiểm tra email đã tồn tại
-    public function checkEmailExists($email)
-    {
-        $sql = "SELECT COUNT(*) FROM users WHERE email = ?";
-        $stmt = $this->conn->prepare($sql);
-        $stmt->execute([$email]);
-        return $stmt->fetchColumn() > 0;
-    }
 }
